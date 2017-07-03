@@ -1,0 +1,26 @@
+apply plugin: 'java'
+archivesBaseName = 'util'
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+// Java configuration
+sourceCompatibility = 1.8
+[compileJava]*.options*.encoding = 'UTF-8'
+sourceSets.main.java.srcDirs = ["src/"]
+
+// App's dependencies
+dependencies {
+}
+task copyDependencies(type: Copy) {
+   from configurations.compile
+   into "$buildDir/libs"
+}
+jar.finalizedBy(copyDependencies)
