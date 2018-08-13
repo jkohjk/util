@@ -18,6 +18,10 @@ public class MapUtil {
 		public abstract <K, V> NavigableMap<K, V> newNavigableMap();
 		public abstract <K, V> NavigableMap<K, V> newNavigableMap(Comparator<? super K> comparator);
 	}
+	public interface Categorizer<K, V> {
+		public K getKey(V value);
+	}
+	
 	public static <K, V> Map<K, V> createMapSingleEntry(K key, V value, MapType mapType) {
 		return createMapSingleEntry(key, value, mapType, null);
 	}
@@ -114,6 +118,10 @@ public class MapUtil {
 		Number currentCount = map.containsKey(key) ? map.get(key) : 0;
 		map.put(key, NumberUtil.add(currentCount, increment, type));
 	}
+	public static <K, V extends Number> void multiplyValue(Map<K, V> map, K key, Number multiple, Class<V> type) {
+		Number currentCount = map.containsKey(key) ? map.get(key) : 0;
+		map.put(key, NumberUtil.mul(currentCount, multiple, type));
+	}
 	public static <K> boolean removeZero(Map<K, ? extends Number> map, K key) {
 		if(map.containsKey(key) && map.get(key).doubleValue() == 0) {
 			return map.remove(key) != null;
@@ -132,11 +140,42 @@ public class MapUtil {
 		}
 		return false;
 	}
-	public static <K, K2, V> boolean removeEmpty(Map<K, ? extends Map<K2, V>> map, K key) {
+	public static <K, K2, V> boolean removeEmptyMap(Map<K, ? extends Map<K2, V>> map, K key) {
 		if(map.containsKey(key) && map.get(key).isEmpty()) {
 			return map.remove(key) != null;
 		}
 		return false;
+	}
+	public static <K, K2, V> boolean removeEmptyMaps(Map<K, ? extends Map<K2, V>> map) {
+		boolean changed = false;
+		for(Iterator<K> iter = map.keySet().iterator(); iter.hasNext(); ) {
+			K key = iter.next();
+			if(map.get(key).isEmpty()) {
+				iter.remove();
+				changed = true;
+			}
+		}
+		return changed;
+	}
+	public static <K, V> boolean removeEmptyColl(Map<K, ? extends Collection<V>> map, K key) {
+		if(map.containsKey(key) && map.get(key).isEmpty()) {
+			return map.remove(key) != null;
+		}
+		return false;
+	}
+	public static <K, V> boolean removeEmptyColls(Map<K, ? extends Collection<V>> map) {
+		boolean changed = false;
+		for(Iterator<K> iter = map.keySet().iterator(); iter.hasNext(); ) {
+			K key = iter.next();
+			if(map.get(key).isEmpty()) {
+				iter.remove();
+				changed = true;
+			}
+		}
+		return changed;
+	}
+	public static <K, V extends Number> V sumValues(Map<K, V> map, Class<V> type) {
+		return ListUtil.sum(map.values(), type);
 	}
 	public static <K, V extends Number> double calculatePercentage(Map<K, V> numerators, Map<K, V> denominators, K key) {
 		double numerator = numerators.containsKey(key) ? numerators.get(key).doubleValue() : 0;
@@ -168,5 +207,64 @@ public class MapUtil {
     }
 	public static <V> V rollProbabilities(NavigableMap<Integer, V> probabilities) {
 		return probabilities.higherEntry(RANDOM.nextInt(probabilities.lastKey())).getValue();
+	}
+	
+	public static <K, V> Map.Entry<K, V> getRandom(Map<K, V> map) {
+		if(!map.isEmpty()) {
+			return map.entrySet().toArray(new Map.Entry[0])[RANDOM.nextInt(map.size())];
+		}
+		return null;
+	}
+	
+	public static <K> Map<K, Integer> getCounts(List<K> list, MapType mapType) {
+		return getCounts(list, mapType, int.class);
+	}
+	public static <K, V extends Number> Map<K, V> getCounts(List<K> list, MapType mapType, Class<V> valueType) {
+		return getCounts(list, mapType, valueType, null);
+	}
+	public static <K, V extends Number> Map<K, V> getCounts(List<K> list, MapType mapType, Class<V> valueType, Comparator<? super K> comparator) {
+		Map<K, V> map = comparator != null ? mapType.<K, V>newMap(comparator) : mapType.<K, V>newMap();
+		for(K key : list) {
+			incrementValue(map, key, 1, valueType);
+		}
+		return map;
+	}
+	public static <K> NavigableMap<K, Integer> getNavigableCounts(List<K> list, NavigableMapType mapType) {
+		return getNavigableCounts(list, mapType, int.class);
+	}
+	public static <K, V extends Number> NavigableMap<K, V> getNavigableCounts(List<K> list, NavigableMapType mapType, Class<V> valueType) {
+		return getNavigableCounts(list, mapType, valueType, null);
+	}
+	public static <K, V extends Number> NavigableMap<K, V> getNavigableCounts(List<K> list, NavigableMapType mapType, Class<V> valueType, Comparator<? super K> comparator) {
+		NavigableMap<K, V> map = comparator != null ? mapType.<K, V>newNavigableMap(comparator) : mapType.<K, V>newNavigableMap();
+		for(K key : list) {
+			incrementValue(map, key, 1, valueType);
+		}
+		return map;
+	}
+	
+	public static <K, V> Map<K, List<V>> categorize(List<V> list, MapType mapType, ListUtil.ListType listType, Categorizer<K, V> categorizer) {
+		return categorize(list, mapType, listType, categorizer, null);
+	}
+	public static <K, V> Map<K, List<V>> categorize(List<V> list, MapType mapType, ListUtil.ListType listType, Categorizer<K, V> categorizer, Comparator<? super K> comparator) {
+		Map<K, List<V>> map = comparator != null ? mapType.<K, List<V>>newMap(comparator) : mapType.<K, List<V>>newMap();
+		for(V value : list) {
+			K key = categorizer.getKey(value);
+            initInnerList(map, key, listType);
+            map.get(key).add(value);
+		}
+		return map;
+	}
+	public static <K, V> NavigableMap<K, List<V>> categorizeNavigable(List<V> list, NavigableMapType mapType, ListUtil.ListType listType, Categorizer<K, V> categorizer) {
+		return categorizeNavigable(list, mapType, listType, categorizer, null);
+	}
+	public static <K, V> NavigableMap<K, List<V>> categorizeNavigable(List<V> list, NavigableMapType mapType, ListUtil.ListType listType, Categorizer<K, V> categorizer, Comparator<? super K> comparator) {
+		NavigableMap<K, List<V>> map = comparator != null ? mapType.<K, List<V>>newNavigableMap(comparator) : mapType.<K, List<V>>newNavigableMap();
+		for(V value : list) {
+			K key = categorizer.getKey(value);
+            initInnerList(map, key, listType);
+            map.get(key).add(value);
+		}
+		return map;
 	}
 }

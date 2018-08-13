@@ -3,6 +3,7 @@ package com.jkoh.util;
 import java.util.*;
 
 public class ListUtil {
+	private static final Random RANDOM = new Random();
 	public enum ListType {
 		ARRAYLIST { public <E> List<E> newList() { return new ArrayList<E>(); } },
 		LINKEDLIST { public <E> List<E> newList() { return new LinkedList<E>(); } };
@@ -32,5 +33,27 @@ public class ListUtil {
 				return compareListCompatible(o1, o2);
 			}
 		};
+	}
+	
+	public static <E extends Number> E sum(Collection<E> coll, Class<E> type) {
+		E total = NumberUtil.cast(0, type);
+		for(E value : coll) {
+			total = NumberUtil.add(total, value, type);
+		}
+		return total;
+	}
+	
+	public static <E> E getRandom(List<E> list) {
+		if(!list.isEmpty()) {
+			return list.get(RANDOM.nextInt(list.size()));
+		}
+		return null;
+	}
+	
+	public static <E> E removeRandom(List<E> list) {
+		if(!list.isEmpty()) {
+			return list.remove(RANDOM.nextInt(list.size()));
+		}
+		return null;
 	}
 }

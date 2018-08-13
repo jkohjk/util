@@ -3,6 +3,7 @@ package com.jkoh.util;
 import java.util.*;
 
 public class SetUtil {
+	private static final Random RANDOM = new Random();
 	public enum SetType {
 		HASHSET { public <E> Set<E> newSet() { return new HashSet<E>(); } },
 		LINKEDHASHSET { public <E> Set<E> newSet() { return new LinkedHashSet<E>(); } },
@@ -16,5 +17,11 @@ public class SetUtil {
 			public <E> NavigableSet<E> newNavigableSet(Comparator<? super E> comparator) { return new TreeSet<E>(comparator); } };
 		public abstract <E> NavigableSet<E> newNavigableSet();
 		public abstract <E> NavigableSet<E> newNavigableSet(Comparator<? super E> comparator);
+	}
+	public static <E> E getRandom(Set<E> set) {
+		if(!set.isEmpty()) {
+			return ((E[])set.toArray())[RANDOM.nextInt(set.size())];
+		}
+		return null;
 	}
 }
